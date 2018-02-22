@@ -1,0 +1,32 @@
+{
+    "name": "tokenly/tokenmap-client",
+    "description": "A tokenmap client library",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Devon Weller",
+            "email": "dweller@tokenly.com",
+            "homepage": "http://tokenly.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.0.0",
+        "guzzlehttp/guzzle": "~6.0"
+    },
+    "require-dev": {
+        "mockery/mockery": "dev-master",
+        "phpunit/phpunit": "^5"
+    },
+    "autoload": {
+        "psr-4": {"Tokenly\\TokenmapClient\\": "src/"}
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Tokenly\\TokenmapClient\\ServiceProvider\\TokenmapServiceProvider"
+            ]
+        }
+    }
+
+}
