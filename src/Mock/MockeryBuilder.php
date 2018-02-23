@@ -3,6 +3,7 @@
 namespace Tokenly\TokenmapClient\Mock;
 
 use Exception;
+use GuzzleHttp\Exception\RequestException;
 use Mockery;
 use Tokenly\TokenmapClient\Client;
 use Tokenly\TokenmapClient\Mock\MemoryCacheStore;
@@ -62,7 +63,11 @@ class MockeryBuilder
                     return $entry;
                 }
             }
-            throw new Exception("Token Not Found", 404);
+
+            // mock 404 response exception
+            $request = new \GuzzleHttp\Psr7\Request('GET', 'http://foo.com/api/token/foo');
+            $response = new \GuzzleHttp\Psr7\Response(404);
+            throw new RequestException("Token Not Found", $request, $response);
         });
 
         // by asset
@@ -72,7 +77,11 @@ class MockeryBuilder
                     return $entry;
                 }
             }
-            throw new Exception("Token Not Found", 404);
+
+            // mock 404 response exception
+            $request = new \GuzzleHttp\Psr7\Request('GET', 'http://foo.com/api/token/foo');
+            $response = new \GuzzleHttp\Psr7\Response(404);
+            throw new RequestException("Token Not Found", $request, $response);
         });
 
         // set fresh (1 min old) by default

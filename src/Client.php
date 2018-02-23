@@ -174,23 +174,13 @@ class Client
      */
     public function tokenInfoByChainAndSymbol($chain, $symbol, $with_cache = true)
     {
-        if ($with_cache) {
-            $cache_key = 'tokenmap.bySymbol.' . $chain . '.' . $symbol;
-            $cached_data = $this->cache_store->get($cache_key);
-            if ($cached_data !== null and $cached_data) {
-                return $cached_data;
-            }
-        }
-
-        $loaded_data = $this->loadTokenInfromFromApiByChainAndSymbol($chain, $symbol);
-
-        if ($with_cache) {
-            // cache for 2 minutes
-            $this->cache_store->put($cache_key, $loaded_data, 2);
-        }
-
-        return $loaded_data;
+        $cache_key = $with_cache ? 'tokenmap.bySymbol.' . $chain . '.' . $symbol : null;
+        return $this->loadTokenUsingCache($cache_key, function() use ($chain, $symbol) {
+            return $this->loadTokenInfromFromApiByChainAndSymbol($chain, $symbol);
+        });
     }
+
+
 
     /**
      * Returns single token information
@@ -205,22 +195,10 @@ class Client
      */
     public function tokenInfoByChainAndAsset($chain, $asset, $with_cache = true)
     {
-        if ($with_cache) {
-            $cache_key = 'tokenmap.byAsset.' . $chain . '.' . $asset;
-            $cached_data = $this->cache_store->get($cache_key);
-            if ($cached_data !== null and $cached_data) {
-                return $cached_data;
-            }
-        }
-
-        $loaded_data = $this->loadTokenInfromFromApiByChainAndAsset($chain, $asset);
-
-        if ($with_cache) {
-            // cache for 2 minutes
-            $this->cache_store->put($cache_key, $loaded_data, 2);
-        }
-
-        return $loaded_data;
+        $cache_key = $with_cache ? 'tokenmap.byAsset.' . $chain . '.' . $asset : null;
+        return $this->loadTokenUsingCache($cache_key, function() use ($chain, $asset) {
+            return $this->loadTokenInfromFromApiByChainAndAsset($chain, $asset);
+        });
     }
 
     // -----------------------------
@@ -243,6 +221,40 @@ class Client
 
         $raw_data = $this->loadFromAPI('token/all', $data);
         return $raw_data;
+    }
+
+    protected function loadTokenUsingCache($cache_key, $fetch_callback_fn) {
+        if ($cache_key != null) {
+            // try cache first
+            $cached_data = $this->cache_store->get($cache_key);
+            if ($cached_data !== null) {
+                // if we stored a false in the cache, that means the token wasn't found
+                if ($cached_data === false) {
+                    return null;
+                }
+                return $cached_data;
+            }
+        }
+
+        try {
+            $loaded_data = $fetch_callback_fn();
+        } catch (RequestException $e) {
+            // catch a 404 and treat it as not found
+            if ($e->getCode() == 404) {
+                // be sure to store a false here
+                $loaded_data = false;
+            } else {
+                // other errors are not cached
+                throw $e;
+            }
+        }
+
+        if ($cache_key != null) {
+            // cache for 2 minutes
+            $this->cache_store->put($cache_key, $loaded_data, 2);
+        }
+
+        return $loaded_data;
     }
 
     protected function loadTokenInfromFromApiByChainAndSymbol($chain, $symbol) {

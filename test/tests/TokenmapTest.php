@@ -98,6 +98,30 @@ class TokenmapTest extends PHPUnit_Framework_TestCase
 
     }
 
+    public function testCacheNotFoundToken() {
+        $mockery_builder = new MockeryBuilder();
+        $tokenmap_client = $mockery_builder->buildMock();
+
+        $expected_tokens_list = $mockery_builder->getDefaultTokensList();
+
+        // token by symbol
+        PHPUnit::assertEquals(null, $tokenmap_client->tokenInfoByChainAndSymbol('bitcoin', 'NOTFOUND'));
+
+        // check cached data
+        $cache_key = 'tokenmap.bySymbol.bitcoin.NOTFOUND';
+        $cached_data = $mockery_builder->getMemoryCacheStore()->get($cache_key);
+        PHPUnit::assertTrue(false === $cached_data);
+
+        // token by asset
+        PHPUnit::assertEquals(null, $tokenmap_client->tokenInfoByChainAndAsset('bitcoin', 'NOTFOUNDASSET'));
+
+        // check cached data
+        $cache_key = 'tokenmap.byAsset.bitcoin.NOTFOUNDASSET';
+        $cached_data = $mockery_builder->getMemoryCacheStore()->get($cache_key);
+        PHPUnit::assertTrue(false === $cached_data);
+
+    }
+
 
 
 }
