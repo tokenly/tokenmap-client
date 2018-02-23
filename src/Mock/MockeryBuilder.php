@@ -14,34 +14,81 @@ class MockeryBuilder
 {
 
     protected $rate_entries;
+    protected $tokens_list;
     protected $memory_cache_store;
+    protected $tokenmap_client_mock;
 
 
-    function __construct() {
-        $this->initMockRateEntries();
+    // binds into the Laravel application container
+    public static function bindTokenmapClientMock() {
+        $builder = new MockeryBuilder();
+        app()->instance(Client::class, $builder->buildMock());
+        return $builder;
     }
-    
+
+    // just returns the mocked client
+    public static function buildTokenmapClientMock() {
+        $builder = new MockeryBuilder();
+        return $builder->buildMock();
+    }
+
+    public function __construct() {
+        $this->rate_entries = $this->getDefaultMockRateEntries();
+        $this->tokens_list = $this->getDefaultTokensList();
+    }
 
     ////////////////////////////////////////////////////////////////////////
 
-    public function initMockRateEntries() {
-        $this->rate_entries = $this->getDefaultMockRateEntries();
+    public function getMock() {
+        return $this->tokenmap_client_mock;
+    }
+
+    public function buildMock() {
+        $this->tokenmap_client_mock = Mockery::mock(Client::class, ['http://127.0.0.1/', $this->getMemoryCacheStore()])->makePartial()->shouldAllowMockingProtectedMethods();
+
+        $this->tokenmap_client_mock->shouldReceive('loadRawQuotesData')->andReturnUsing(function() {
+            return ['quotes' => $this->rate_entries];
+        });
+
+        // tokenslist
+        $this->tokenmap_client_mock->shouldReceive('allTokensByPage')->andReturnUsing(function() {
+            return $this->getTokensListResponse();
+        });
+
+        // by chain
+        $this->tokenmap_client_mock->shouldReceive('loadTokenInfromFromApiByChainAndSymbol')->andReturnUsing(function($chain, $symbol) {
+            foreach($this->tokens_list as $entry) {
+                if ($entry['chain'] == $chain and $entry['symbol'] == $symbol) {
+                    return $entry;
+                }
+            }
+            throw new Exception("Token Not Found", 404);
+        });
+
+        // by asset
+        $this->tokenmap_client_mock->shouldReceive('loadTokenInfromFromApiByChainAndAsset')->andReturnUsing(function($chain, $asset) {
+            foreach($this->tokens_list as $entry) {
+                if ($entry['chain'] == $chain and $entry['asset'] == $asset) {
+                    return $entry;
+                }
+            }
+            throw new Exception("Token Not Found", 404);
+        });
+
+        // set fresh (1 min old) by default
+        $this->tokenmap_client_mock->_setNow(strtotime('2017-08-30T00:01:00-0500'));
+
+        return $this->tokenmap_client_mock;
     }
 
     public function setMockRateEntries($rate_entries) {
         $this->rate_entries = $rate_entries;
+        return $this;
     }
 
-    public function mockTokenmapClientWithRates() {
-        $tokenmap_client_mock = Mockery::mock(Client::class, ['http://127.0.0.1/', $this->getMemoryCacheStore()])->makePartial()->shouldAllowMockingProtectedMethods();
-        $tokenmap_client_mock->shouldReceive('loadRawQuotesData')->andReturnUsing(function() {
-            return ['quotes' => $this->rate_entries];
-        });
-
-        // set fresh (1 min old) by default
-        $tokenmap_client_mock->_setNow(strtotime('2017-08-30T00:01:00-0500'));
-
-        return $tokenmap_client_mock;
+    public function setMockTokensList($tokens_list) {
+        $this->tokens_list = $tokens_list;
+        return $this;
     }
 
     public function getMemoryCacheStore() {
@@ -49,6 +96,57 @@ class MockeryBuilder
             $this->memory_cache_store = new MemoryCacheStore();
         }
         return $this->memory_cache_store;
+    }
+
+    public function getDefaultTokensList() {
+        return [
+                [
+                    'chain' => 'bitcoin',
+                    'symbol' => 'BTC',
+                    'name' => 'Bitcoin',
+                    'asset' => 'BTC',
+                ],
+                [
+                    'chain' => 'ethereum',
+                    'symbol' => 'ETH',
+                    'name' => 'Ethereum',
+                    'asset' => 'ETH',
+                ],
+                [
+                    'chain' => 'bitcoin',
+                    'symbol' => 'XCP',
+                    'name' => 'Counterparty',
+                    'asset' => 'XCP',
+                ],
+                [
+                    'chain' => 'bitcoin',
+                    'symbol' => 'FLDC',
+                    'name' => 'Foldincoin',
+                    'asset' => 'FLDC',
+                ],
+                [
+                    'chain' => 'bitcoin',
+                    'symbol' => 'BCY',
+                    'name' => 'Bitcrystals',
+                    'asset' => 'BCY',
+                ],
+                [
+                    'chain' => 'ethereum',
+                    'symbol' => 'CAT',
+                    'name' => 'Cat Token',
+                    'asset' => '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d',
+                ],
+            ];
+    }
+
+    public function getTokensListResponse() {
+        return [
+            'page' => 0,
+            'perPage' => 50,
+            'pageCount' => 1,
+            'count' => count($this->tokens_list),
+            'items' => $this->tokens_list,
+        ];
     }
 
     public function getDefaultMockRateEntries() {
@@ -115,5 +213,9 @@ class MockeryBuilder
             ],
         ];
     }
+
+    // ------------------------------------------------------------------------
+    
+    
 
 }

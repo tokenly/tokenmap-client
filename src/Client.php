@@ -87,9 +87,9 @@ class Client
     {
         $pair_string = $pair[0] . ':' . $pair[1];
 
-        $cached_value = $this->cache_store->get($source . '.' . $pair_string);
-        if ($cached_value !== null and $cached_value) {
-            return $cached_value;
+        $cached_data = $this->cache_store->get($source . '.' . $pair_string);
+        if ($cached_data !== null and $cached_data) {
+            return $cached_data;
         }
 
         $quote = $this->loadQuote($source, $pair);
@@ -141,10 +141,24 @@ class Client
      * }
      * @return array All tokens
      */
-    public function allTokens()
+    public function allTokens($with_cache = true)
     {
+        if ($with_cache) {
+            $cached_data = $this->cache_store->get('tokenmap.allTokens');
+            if ($cached_data !== null and $cached_data) {
+                return $cached_data;
+            }
+        }
+
         $raw_data = $this->allTokensByPage(0, 100);
-        return $raw_data['items'];
+        $loaded_data = $raw_data['items'];
+
+        if ($with_cache) {
+            // cache for 2 minutes
+            $this->cache_store->put('tokenmap.allTokens', $loaded_data, 2);
+        }
+
+        return $loaded_data;
     }
 
     /**
@@ -158,9 +172,24 @@ class Client
      * }
      * @return array Single token information
      */
-    public function tokenInfoByChainAndSymbol($chain, $symbol)
+    public function tokenInfoByChainAndSymbol($chain, $symbol, $with_cache = true)
     {
-        return $this->loadFromAPI('token/' . $chain . '/' . $symbol . '');
+        if ($with_cache) {
+            $cache_key = 'tokenmap.bySymbol.' . $chain . '.' . $symbol;
+            $cached_data = $this->cache_store->get($cache_key);
+            if ($cached_data !== null and $cached_data) {
+                return $cached_data;
+            }
+        }
+
+        $loaded_data = $this->loadTokenInfromFromApiByChainAndSymbol($chain, $symbol);
+
+        if ($with_cache) {
+            // cache for 2 minutes
+            $this->cache_store->put($cache_key, $loaded_data, 2);
+        }
+
+        return $loaded_data;
     }
 
     /**
@@ -174,9 +203,24 @@ class Client
      * }
      * @return array Single token information
      */
-    public function tokenInfoByChainAndAsset($chain, $asset)
+    public function tokenInfoByChainAndAsset($chain, $asset, $with_cache = true)
     {
-        return $this->loadFromAPI('asset/' . $chain . '/' . $asset . '');
+        if ($with_cache) {
+            $cache_key = 'tokenmap.byAsset.' . $chain . '.' . $asset;
+            $cached_data = $this->cache_store->get($cache_key);
+            if ($cached_data !== null and $cached_data) {
+                return $cached_data;
+            }
+        }
+
+        $loaded_data = $this->loadTokenInfromFromApiByChainAndAsset($chain, $asset);
+
+        if ($with_cache) {
+            // cache for 2 minutes
+            $this->cache_store->put($cache_key, $loaded_data, 2);
+        }
+
+        return $loaded_data;
     }
 
     // -----------------------------
@@ -189,8 +233,9 @@ class Client
     }
 
     // ------------------------------------------------------------------------
-    
-    protected function allTokensByPage($pg, $limit) {
+
+    protected function allTokensByPage($pg, $limit)
+    {
         $data = [
             'pg' => $pg,
             'limit' => $limit,
@@ -198,6 +243,14 @@ class Client
 
         $raw_data = $this->loadFromAPI('token/all', $data);
         return $raw_data;
+    }
+
+    protected function loadTokenInfromFromApiByChainAndSymbol($chain, $symbol) {
+        return $this->loadFromAPI('token/' . $chain . '/' . $symbol . '');
+    }
+
+    protected function loadTokenInfromFromApiByChainAndAsset($chain, $asset) {
+        return $this->loadFromAPI('asset/' . $chain . '/' . $asset . '');
     }
 
     // ------------------------------------------------------------------------

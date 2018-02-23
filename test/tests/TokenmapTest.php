@@ -12,8 +12,7 @@ class TokenmapTest extends PHPUnit_Framework_TestCase
 
 
     public function testGetRates() {
-        $mockery_builder = new MockeryBuilder();
-        $tokenmap_client = $mockery_builder->mockTokenmapClientWithRates();
+        $tokenmap_client = MockeryBuilder::buildTokenmapClientMock();
 
         PHPUnit::assertEquals(4000, $tokenmap_client->getQuote('bitcoinAverage', ['USD','BTC'])['last']);
         PHPUnit::assertEquals(4000, $tokenmap_client->getQuote('bitcoinAverage', ['USD','BTC'])['last']);
@@ -24,8 +23,7 @@ class TokenmapTest extends PHPUnit_Framework_TestCase
     }
 
     public function testGetRatesExpired() {
-        $mockery_builder = new MockeryBuilder();
-        $tokenmap_client = $mockery_builder->mockTokenmapClientWithRates();
+        $tokenmap_client = MockeryBuilder::buildTokenmapClientMock();
 
         // make expired
         $tokenmap_client->_setNow(strtotime('2017-09-01T00:00:00-0500'));
@@ -37,7 +35,7 @@ class TokenmapTest extends PHPUnit_Framework_TestCase
 
     public function testGetFallback() {
         $mockery_builder = new MockeryBuilder();
-        $tokenmap_client = $mockery_builder->mockTokenmapClientWithRates();
+        $tokenmap_client = $mockery_builder->buildMock();
 
         PHPUnit::assertEquals(4000, $tokenmap_client->getCurrentBTCQuoteWithFallback());
 
@@ -56,7 +54,7 @@ class TokenmapTest extends PHPUnit_Framework_TestCase
 
     public function testCurrencyQuoteWithFallback() {
         $mockery_builder = new MockeryBuilder();
-        $tokenmap_client = $mockery_builder->mockTokenmapClientWithRates();
+        $tokenmap_client = $mockery_builder->buildMock();
 
         // simple quote
         PHPUnit::assertEquals(0.004000, $tokenmap_client->getTokenValue('poloniex', 'MYTOKEN'));
@@ -72,6 +70,32 @@ class TokenmapTest extends PHPUnit_Framework_TestCase
 
         // fallback should kick in now
         PHPUnit::assertEquals(0.004001, $tokenmap_client->getTokenValue('poloniex', 'MYTOKEN'));
+    }
+
+
+    public function testGetTokens() {
+        $mockery_builder = new MockeryBuilder();
+        $tokenmap_client = $mockery_builder->buildMock();
+
+        $expected_tokens_list = $mockery_builder->getDefaultTokensList();
+
+        // all tokens
+        PHPUnit::assertEquals($expected_tokens_list, $tokenmap_client->allTokens());
+
+        // token by symbol
+        PHPUnit::assertEquals($expected_tokens_list[3], $tokenmap_client->tokenInfoByChainAndSymbol('bitcoin', 'FLDC'));
+
+        // token by asset
+        PHPUnit::assertEquals($expected_tokens_list[5], $tokenmap_client->tokenInfoByChainAndAsset('ethereum', '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'));
+
+        // check cached data
+        $cache_key = 'tokenmap.bySymbol.bitcoin.FLDC';
+        $cached_data = $mockery_builder->getMemoryCacheStore()->get($cache_key);
+        PHPUnit::assertEquals($expected_tokens_list[3], $cached_data);
+        $cache_key = 'tokenmap.byAsset.ethereum.0x06012c8cf97BEaD5deAe237070F9587f8E7A266d';
+        $cached_data = $mockery_builder->getMemoryCacheStore()->get($cache_key);
+        PHPUnit::assertEquals($expected_tokens_list[5], $cached_data);
+
     }
 
 
