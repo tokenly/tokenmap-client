@@ -170,7 +170,7 @@ class Client
      *   "name": "Bitcoin",
      *   "asset": "BTC"
      * }
-     * @return array Single token information
+     * @return array|null Single token information or null if not found
      */
     public function tokenInfoByChainAndSymbol($chain, $symbol, $with_cache = true)
     {
@@ -191,7 +191,7 @@ class Client
      *   "name": "Bitcoin",
      *   "asset": "BTC"
      * }
-     * @return array Single token information
+     * @return array|null Single token information or null if not found
      */
     public function tokenInfoByChainAndAsset($chain, $asset, $with_cache = true)
     {
