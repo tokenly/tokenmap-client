@@ -2,12 +2,14 @@
 
 namespace Tokenly\TokenmapClient\LaravelCacheStore;
 
-use Tokenly\TokenmapClient\Contracts\CacheStore;
 use Illuminate\Contracts\Cache\Repository;
+use Tokenly\TokenmapClient\Contracts\CacheStore;
 
-class LaravelCacheStore implements CacheStore {
+class LaravelCacheStore implements CacheStore
+{
 
-    function __construct(Repository $repository) {
+    public function __construct(Repository $repository)
+    {
         $this->laravel_cache_store = $repository;
     }
 
@@ -17,7 +19,8 @@ class LaravelCacheStore implements CacheStore {
      * @param  string  $key
      * @return mixed
      */
-    public function get($key) {
+    public function get($key)
+    {
         return $this->laravel_cache_store->get($key);
     }
 
@@ -29,7 +32,8 @@ class LaravelCacheStore implements CacheStore {
      * @param  int     $minutes
      * @return void
      */
-    public function put($key, $value, $minutes) {
+    public function put($key, $value, $minutes)
+    {
         return $this->laravel_cache_store->put($key, $value, $minutes);
     }
 

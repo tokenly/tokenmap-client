@@ -25,27 +25,17 @@ TOKENMAP_CONNECTION_URL=https://tokenmap.tokenly.com
 
 ### Simple BTC quote
 
-Get a BTC quote in USD.  This will use bitcoinAverage and then fallback to Bitstamp if the data is not current
+Get a BTC quote in USD.  This will use the sources as defined in the Tokenmap interface.
 
 ```php
-$tokenmap_client = app('Tokenly\TokenmapClient\Client');
-$usd_float = $tokenmap_client->getCurrentBTCQuoteWithFallback();
-```
-
-
-### Get a token quote
-
-Get a token quote by going to BTC and then from BTC to USD.  This will use the default fallback sources of bitcoinAverage and bitstamp for the BTC quote.
-
-```php
-$tokenmap_client = app('Tokenly\TokenmapClient\Client');
-$usd_float = $tokenmap_client->getTokenValue('poloniex', 'XCP');
+$tokenmap_client = app('Tokenly\TokenmapClient\TokenmapClient');
+$usd_float = $tokenmap_client->getSimpleQuote('USD', 'BTC', 'bitcoin')->getFloatValue();
 ```
 
 
 ## Get token information
 
 ```php
-$tokenmap_client = app('Tokenly\TokenmapClient\Client');
+$tokenmap_client = app('Tokenly\TokenmapClient\TokenmapClient');
 $all_tokens = $tokenmap_client->allTokens();
 ```

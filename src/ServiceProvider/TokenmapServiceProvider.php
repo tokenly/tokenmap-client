@@ -2,18 +2,22 @@
 
 namespace Tokenly\TokenmapClient\ServiceProvider;
 
-use Exception;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
+use Tokenly\TokenmapClient\Console\GetQuoteCommand;
 
 /*
-* TokenmapServiceProvider
-*/
+ * TokenmapServiceProvider
+ */
 class TokenmapServiceProvider extends ServiceProvider
 {
 
     public function boot()
     {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                GetQuoteCommand::class,
+            ]);
+        }
     }
 
     /**
@@ -23,7 +27,7 @@ class TokenmapServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind('Tokenly\TokenmapClient\Client', function($app) {
+        $this->app->bind('Tokenly\TokenmapClient\Client', function ($app) {
             $cache_store = app('Tokenly\TokenmapClient\LaravelCacheStore\LaravelCacheStore');
 
             $tokenmap_connection_url = env('TOKENMAP_CONNECTION_URL', 'https://tokenmap.tokenly.com');
@@ -34,4 +38,3 @@ class TokenmapServiceProvider extends ServiceProvider
     }
 
 }
-

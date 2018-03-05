@@ -2,12 +2,10 @@
 
 namespace Tokenly\TokenmapClient\Mock;
 
-use Exception;
-use Tokenly\TokenmapClient\Client;
 use Tokenly\TokenmapClient\Contracts\CacheStore;
 
 /**
-*/
+ */
 class MemoryCacheStore implements CacheStore
 {
 
@@ -20,8 +18,9 @@ class MemoryCacheStore implements CacheStore
      * @param  string  $key
      * @return mixed
      */
-    public function get($key) {
-        if (!isset($this->cache[$key]) OR $this->cache[$key]['ttl'] <= $this->getNow()) {
+    public function get($key)
+    {
+        if (!isset($this->cache[$key]) or $this->cache[$key]['ttl'] <= $this->getNow()) {
             return null;
         }
         return $this->cache[$key]['value'];
@@ -35,22 +34,26 @@ class MemoryCacheStore implements CacheStore
      * @param  int     $minutes
      * @return void
      */
-    public function put($key, $value, $minutes) {
+    public function put($key, $value, $minutes)
+    {
         $this->cache[$key] = [
             'value' => $value,
-            'ttl'   => $this->getNow() + ($minutes * 60),
+            'ttl' => $this->getNow() + ($minutes * 60),
         ];
     }
 
-    public function clear() {
+    public function clear()
+    {
         $this->cache = [];
     }
 
-    public function getNow() {
+    public function getNow()
+    {
         return isset($this->now) ? $this->now : time();
     }
 
-    public function setNow($now) {
+    public function setNow($now)
+    {
         $this->now = $now;
     }
 

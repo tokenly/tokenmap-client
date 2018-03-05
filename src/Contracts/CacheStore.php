@@ -2,7 +2,8 @@
 
 namespace Tokenly\TokenmapClient\Contracts;
 
-interface CacheStore {
+interface CacheStore
+{
 
     /**
      * Retrieve an item from the cache by key.

@@ -2,17 +2,11 @@
 
 namespace Tokenly\TokenmapClient\Console;
 
-
-use App\ConsulClient;
-use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Event;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
-use Tokenly\Laravel\Facade\EventLog;
 
-class GetQuoteCommand extends Command {
+class GetQuoteCommand extends Command
+{
 
     /**
      * The console command name.
@@ -26,8 +20,7 @@ class GetQuoteCommand extends Command {
      *
      * @var string
      */
-    protected $description = 'Tokenmap Quote Loader';
-
+    protected $description = 'Loads and caches a quote from Tokenmap';
 
     /**
      * Get the console command arguments.
@@ -37,12 +30,11 @@ class GetQuoteCommand extends Command {
     protected function getArguments()
     {
         return [
-            ['source', InputArgument::OPTIONAL, 'Quote source', 'bitcoinAverage'],
-            ['pair',   InputArgument::OPTIONAL, 'Quote pair',   'USD:BTC'],
+            ['currency', InputArgument::OPTIONAL, 'Quote currency', 'USD'],
+            ['token', InputArgument::OPTIONAL, 'Quote token', 'BTC'],
+            ['chain', InputArgument::OPTIONAL, 'Quote chain', 'bitcoin'],
         ];
     }
-
-
 
     /**
      * Execute the console command.
@@ -55,14 +47,14 @@ class GetQuoteCommand extends Command {
 
         $tokenmap_client = app('Tokenly\TokenmapClient\Client');
 
-        $source = $this->input->getArgument('source');
-        $pair = explode(':', $this->input->getArgument('pair'));
-        $quote = $tokenmap_client->getQuote($source, $pair);
+        $currency = $this->input->getArgument('currency');
+        $token = $this->input->getArgument('token');
+        $chain = $this->input->getArgument('chain');
+
+        $quote = $tokenmap_client->getQuote($currency, $token, $chain);
         $this->info(json_encode($quote, 192));
 
         $this->comment('done');
     }
-
-
 
 }

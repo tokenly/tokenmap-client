@@ -6,13 +6,14 @@ use Exception;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise\all;
+use Tokenly\CryptoQuantity\CryptoQuantity;
 use Tokenly\TokenmapClient\Contracts\CacheStore;
 use Tokenly\TokenmapClient\Exceptions\ExpiredQuoteException;
 
 /**
  * Tokenmap Client
  */
-class Client
+class TokenmapClient
 {
 
     const SATOSHI = 100000000;
@@ -29,100 +30,50 @@ class Client
     // quote functions
 
     /**
-     * Converts a currency to a fiat value by going to BTC and then to fiat
-     * @param  string     $source          The source for the currency quote (poloniex)
-     * @param  array      $token           A token name like 'MYTOKEN'
-     * @param  array|null $fiat_sources    An array of BTC quote sources in order. defaults to ['bitcoinAverage', 'bitstamp']
-     * @param  array|null $fiat_pair       A fiat to BTC quote pair. defaults to ['USD','BTC']
-     * @return float      A fiat amount
+     * Returns a simple quote as a
+     * @param  string $currency  A base currency, like BTC or USD
+     * @param  string $token     A token name like 'MYTOKEN'
+     * @param  string $chain     A chain for this token, like bitcoin or ethereum
+     * @param  int|null $stale_seconds Throw an error if the quote is more than this many seconds old.  This should be at least 120.
+     * @param  boolean  $force_reload  If true, do not load from the cache
+     * @return CryptoQuantity    A simple quantity representing the last traded price for this token
      */
-    public function getTokenValue($source, $token, array $fiat_sources = null, array $fiat_pair = null)
+    public function getSimpleQuote(string $currency, string $token, string $chain, int $stale_seconds = null, bool $force_reload = false)
     {
-        $crypto_quote = $this->getQuote($source, ['BTC', $token]);
-
-        if ($fiat_pair === null) {
-            $fiat_pair = 'USD';
-        }
-        $fiat_value = $this->getCurrentBTCQuoteWithFallback($fiat_pair, $fiat_sources);
-
-        $crypto_value = $crypto_quote['last'];
-
-        if ($crypto_quote['inSatoshis']) {
-            $crypto_value = $crypto_value / self::SATOSHI;
-        }
-
-        return $crypto_value * $fiat_value;
+        $quote = $this->getQuote($currency, $token, $chain, $stale_seconds, $force_reload);
+        return CryptoQuantity::fromFloat($quote['last']);
     }
 
     /**
-     * gets a current price quote,
-     * @param  array   $fiat A fiat currency to check market price - e.g USD, EUR
-     * @param  array   $sources An array of BTC quote sources in order. defaults to ['bitcoinAverage', 'bitstamp']
-     * @param  integer $stale_seconds The amount of time to consider a quote as expired. defaults to 3600 seconds (1 hour)
-     * @throws ExpiredQuoteException if all sources are expired
-     * @return float   A fiat amount
+     * Returns a simple quote as a
+     * @param  string $currency        A base currency, like BTC or USD
+     * @param  string $token           A token name like 'MYTOKEN'
+     * @param  string $chain           A chain for this token, like bitcoin or ethereum
+     * @param  int|null $stale_seconds Throw an error if the quote is more than this many seconds old.  This should be at least 120.
+     * @param  boolean  $force_reload  If true, do not load from the cache
+     * @return array  Full quote data.  See https://tokenmap-stage.tokenly.com/api/v1/quote/bitcoin/USD:BTC for an example
      */
-    public function getCurrentBTCQuoteWithFallback($fiat = 'USD', $sources = null, $stale_seconds = null)
+    public function getQuote(string $currency, string $token, string $chain, int $stale_seconds = null, bool $force_reload = false)
     {
-        if ($sources === null) {$sources = ['bitcoinAverage', 'bitstamp'];}
-        if ($stale_seconds === null) {$stale_seconds = 3600;}
+        $api_path = "quote/{$chain}/{$currency}:{$token}";
 
-        if (!is_array($sources) and $sources) {
-            $sources = [$sources];
-        }
-
-        $quote_pair = [$fiat, 'BTC'];
-
-        foreach ($sources as $source) {
-            $quote = $this->getQuote($source, $quote_pair);
-            if ($this->quoteIsFresh($quote, $stale_seconds)) {
-                return $quote['last'];
-            }
-        }
-
-        throw new ExpiredQuoteException("No sources were fresh.");
-    }
-
-    public function getQuote($source, array $pair)
-    {
-        $pair_string = $pair[0] . ':' . $pair[1];
-
-        $cached_data = $this->cache_store->get($source . '.' . $pair_string);
+        $cached_data = $force_reload ? null : $this->cache_store->get($api_path);
         if ($cached_data !== null and $cached_data) {
-            return $cached_data;
+            $quote = $cached_data;
+        } else {
+            $quote = $this->loadQuoteFromAPI($currency, $token, $chain);
         }
 
-        $quote = $this->loadQuote($source, $pair);
-        return $quote;
-    }
-
-    public function loadQuote($source = null, array $pair = array())
-    {
-        $quote = null;
-        $pair_string = null;
-        if ($source !== null) {$pair_string = $pair[0] . ':' . $pair[1];}
-
-        $loaded_quote_data = $this->loadRawQuotesData();
-        foreach ($loaded_quote_data['quotes'] as $loaded_quote) {
-            $loaded_source = $loaded_quote['source'];
-            $loaded_pair_string = $loaded_quote['pair'];
-
-            // cache for 10 minutes
-            $this->cache_store->put($loaded_source . '.' . $loaded_pair_string, $loaded_quote, 10);
-
-            if ($source !== null) {
-                if ($loaded_source == $source and $loaded_pair_string == $pair_string) {
-                    $quote = $loaded_quote;
-                }
+        if ($stale_seconds !== null) {
+            if (!$this->quoteIsFresh($quote, $stale_seconds)) {
+                throw new ExpiredQuoteException("The requested quote was not fresh.");
             }
         }
 
-        if ($quote === null) {throw new Exception("Quote not found for $source with pair $pair_string", 1);}
-
         return $quote;
     }
 
-    public function loadRawQuotesData()
+    public function loadAllQuotesData()
     {
         return $this->loadFromAPI('quote/all');
     }
@@ -170,17 +121,15 @@ class Client
      *   "name": "Bitcoin",
      *   "asset": "BTC"
      * }
-     * @return array|null Single token information or null if not found
+     * @return array Single token information
      */
     public function tokenInfoByChainAndSymbol($chain, $symbol, $with_cache = true)
     {
         $cache_key = $with_cache ? 'tokenmap.bySymbol.' . $chain . '.' . $symbol : null;
-        return $this->loadTokenUsingCache($cache_key, function() use ($chain, $symbol) {
+        return $this->loadTokenUsingCache($cache_key, function () use ($chain, $symbol) {
             return $this->loadTokenInfromFromApiByChainAndSymbol($chain, $symbol);
         });
     }
-
-
 
     /**
      * Returns single token information
@@ -191,12 +140,12 @@ class Client
      *   "name": "Bitcoin",
      *   "asset": "BTC"
      * }
-     * @return array|null Single token information or null if not found
+     * @return array Single token information
      */
     public function tokenInfoByChainAndAsset($chain, $asset, $with_cache = true)
     {
         $cache_key = $with_cache ? 'tokenmap.byAsset.' . $chain . '.' . $asset : null;
-        return $this->loadTokenUsingCache($cache_key, function() use ($chain, $asset) {
+        return $this->loadTokenUsingCache($cache_key, function () use ($chain, $asset) {
             return $this->loadTokenInfromFromApiByChainAndAsset($chain, $asset);
         });
     }
@@ -223,7 +172,8 @@ class Client
         return $raw_data;
     }
 
-    protected function loadTokenUsingCache($cache_key, $fetch_callback_fn) {
+    protected function loadTokenUsingCache($cache_key, $fetch_callback_fn)
+    {
         if ($cache_key != null) {
             // try cache first
             $cached_data = $this->cache_store->get($cache_key);
@@ -257,15 +207,35 @@ class Client
         return $loaded_data;
     }
 
-    protected function loadTokenInfromFromApiByChainAndSymbol($chain, $symbol) {
+    protected function loadTokenInfromFromApiByChainAndSymbol($chain, $symbol)
+    {
         return $this->loadFromAPI('token/' . $chain . '/' . $symbol . '');
     }
 
-    protected function loadTokenInfromFromApiByChainAndAsset($chain, $asset) {
+    protected function loadTokenInfromFromApiByChainAndAsset($chain, $asset)
+    {
         return $this->loadFromAPI('asset/' . $chain . '/' . $asset . '');
     }
 
     // ------------------------------------------------------------------------
+
+    protected function loadQuoteFromAPI(string $currency, string $token, string $chain)
+    {
+        $quote = null;
+
+        // load from a URL like /api/v1/quote/bitcoin/USD:BTC
+        $api_path = "quote/{$chain}/{$currency}:{$token}";
+        $quote = $this->loadFromAPI("quote/{$chain}/{$currency}:{$token}");
+
+        // cache for 1 minute
+        $this->cache_store->put($api_path, $quote, 1);
+
+        if ($quote === null) {
+            throw new Exception("Quote not found for {$currency}:{$token} on chain $chain", 1);
+        }
+
+        return $quote;
+    }
 
     protected function loadFromAPI($path = 'quote/all', $data = [])
     {

@@ -12,7 +12,9 @@
     ],
     "require": {
         "php": ">=7.0.0",
-        "guzzlehttp/guzzle": "~6.0"
+        "guzzlehttp/guzzle": "~6.0",
+        "tokenly/crypto-quantity": "^2"
+
     },
     "require-dev": {
         "mockery/mockery": "dev-master",
