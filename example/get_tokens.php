@@ -1,6 +1,6 @@
 <?php
 
-use Tokenly\TokenmapClient\Client;
+use Tokenly\TokenmapClient\TokenmapClient;
 use Tokenly\TokenmapClient\Mock\MemoryCacheStore;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -10,7 +10,7 @@ if (!$tokenmap_connection_url) {
     $tokenmap_connection_url = 'https://tokenmap.tokenly.com';
 }
 
-$tokenmap_client = new Client($tokenmap_connection_url, new MemoryCacheStore());
+$tokenmap_client = new TokenmapClient($tokenmap_connection_url, new MemoryCacheStore());
 
 
 // all tokens
