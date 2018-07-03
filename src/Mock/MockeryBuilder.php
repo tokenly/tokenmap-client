@@ -129,29 +129,35 @@ class MockeryBuilder
                 'asset' => 'ETH',
             ],
             [
-                'chain' => 'bitcoin',
-                'symbol' => 'XCP',
-                'name' => 'Counterparty',
-                'asset' => 'XCP',
-            ],
-            [
-                'chain' => 'bitcoin',
-                'symbol' => 'FLDC',
-                'name' => 'Foldincoin',
-                'asset' => 'FLDC',
-            ],
-            [
-                'chain' => 'bitcoin',
-                'symbol' => 'BCY',
-                'name' => 'Bitcrystals',
-                'asset' => 'BCY',
-            ],
-            [
                 'chain' => 'ethereum',
                 'symbol' => 'CAT',
                 'name' => 'Cat Token',
                 'asset' => '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d',
             ],
+            [
+                'chain' => 'counterparty',
+                'symbol' => 'XCP',
+                'name' => 'Counterparty',
+                'asset' => 'XCP',
+            ],
+            [
+                'chain' => 'counterparty',
+                'symbol' => 'FLDC',
+                'name' => 'Foldincoin',
+                'asset' => 'FLDC',
+            ],
+            [
+                'chain' => 'counterparty',
+                'symbol' => 'BCY',
+                'name' => 'Bitcrystals',
+                'asset' => 'BITCRYSTALS',
+            ],
+            [
+                'chain' => 'counterparty',
+                'symbol' => 'LTBC',
+                'name' => 'LTBCOIN',
+                'asset' => 'LTBCOIN',
+            ],            
         ];
     }
 
