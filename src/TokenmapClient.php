@@ -41,6 +41,9 @@ class TokenmapClient
     public function getSimpleQuote(string $currency, string $token, string $chain, int $stale_seconds = null, bool $force_reload = false)
     {
         $quote = $this->getQuote($currency, $token, $chain, $stale_seconds, $force_reload);
+        if (isset($quote['inSatoshis']) and $quote['inSatoshis']) {
+            return CryptoQuantity::fromSatoshis($quote['last']);
+        }
         return CryptoQuantity::fromFloat($quote['last']);
     }
 
