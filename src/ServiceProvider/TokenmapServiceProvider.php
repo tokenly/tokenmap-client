@@ -3,6 +3,7 @@
 namespace Tokenly\TokenmapClient\ServiceProvider;
 
 use Illuminate\Support\ServiceProvider;
+use Tokenly\TokenmapClient\Bvam\BVAMClient;
 use Tokenly\TokenmapClient\Console\GetQuoteCommand;
 use Tokenly\TokenmapClient\TokenmapClient;
 
@@ -36,6 +37,11 @@ class TokenmapServiceProvider extends ServiceProvider
             $tokenmap_client = new TokenmapClient($tokenmap_connection_url, $cache_store);
             return $tokenmap_client;
         });
+
+        $this->app->bind(BVAMClient::class, function($app) {
+            return new BVAMClient(env('TOKENMAP_CONNECTION_URL', 'https://tokenmap.tokenly.com'));
+        });
+
     }
 
 }

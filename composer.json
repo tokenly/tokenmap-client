@@ -13,7 +13,8 @@
     "require": {
         "php": ">=7.0.0",
         "guzzlehttp/guzzle": "~6.0",
-        "tokenly/crypto-quantity": "^2"
+        "tokenly/crypto-quantity": "^2",
+        "tokenly/api-client": "^1.1"
 
     },
     "require-dev": {
