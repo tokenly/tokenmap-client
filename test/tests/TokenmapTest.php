@@ -1,13 +1,13 @@
 <?php
 
-use PHPUnit_Framework_Assert as PHPUnit;
+use \PHPUnit\Framework\Assert as PHPUnit;
 use Tokenly\TokenmapClient\Exceptions\ExpiredQuoteException;
 use Tokenly\TokenmapClient\Mock\MockeryBuilder;
-
+use PHPUnit\Framework\TestCase;
 /*
  *
  */
-class TokenmapTest extends PHPUnit_Framework_TestCase
+class TokenmapTest extends TestCase
 {
 
     public function testGetQuote()
