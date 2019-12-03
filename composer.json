@@ -13,13 +13,13 @@
     "require": {
         "php": ">=7.0.0",
         "guzzlehttp/guzzle": "~6.0",
-        "tokenly/crypto-quantity": "^2",
-        "tokenly/api-client": "^1.1"
+        "tokenly/crypto-quantity": "dev-master",
+        "tokenly/api-client": "dev-master"
 
     },
     "require-dev": {
         "mockery/mockery": "dev-master",
-        "phpunit/phpunit": "^5"
+        "phpunit/phpunit": "^7"
     },
     "autoload": {
         "psr-4": {"Tokenly\\TokenmapClient\\": "src/"}
